@@ -1,0 +1,25 @@
+{
+  "name": "Moloiso Pig Farm",
+  "short_name": "Moloiso",
+  "description": "Moloiso Pig Farm — Offline-first Farm Management System",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7f4",
+  "theme_color": "#2e7d32",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%232e7d32'/%3E%3Ctext x='96' y='128' font-size='110' text-anchor='middle' fill='white'%3E🐖%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%232e7d32'/%3E%3Ctext x='256' y='340' font-size='290' text-anchor='middle' fill='white'%3E🐖%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

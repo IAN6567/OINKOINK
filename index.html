@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#2e7d32">
+  <meta name="description" content="Offline-first Pig Farm Management System">
+  <title>Moloiso Pig Farm</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+</head>
+<body>
+  <!-- Offline / Online Status Bar -->
+  <div id="statusBar" class="status-bar online">
+    <span id="statusText">● Online — All changes saved locally</span>
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <h1>🐖 Moloiso Pig Farm</h1>
+      <div class="header-actions">
+        <button id="exportBtn" class="icon-btn" title="Export Backup">⬇️ Export</button>
+        <button id="importBtn" class="icon-btn" title="Import Backup">⬆️ Import</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs" id="mainTabs">
+      <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="tab-btn" data-tab="herd">🐷 Herd</button>
+      <button class="tab-btn" data-tab="breeding">💞 Breeding</button>
+      <button class="tab-btn" data-tab="health">💊 Health</button>
+      <button class="tab-btn" data-tab="finances">💰 Finances</button>
+    </nav>
+
+    <!-- ============ DASHBOARD TAB ============ -->
+    <section class="tab-panel active" id="tab-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-label">Total Pigs</span><span class="stat-value" id="statTotal">0</span></div>
+        <div class="stat-card"><span class="stat-label">Sows</span><span class="stat-value" id="statSows">0</span></div>
+        <div class="stat-card"><span class="stat-label">Boars</span><span class="stat-value" id="statBoars">0</span></div>
+        <div class="stat-card"><span class="stat-label">Weaners</span><span class="stat-value" id="statWeaners">0</span></div>
+        <div class="stat-card"><span class="stat-label">Finishers</span><span class="stat-value" id="statFinishers">0</span></div>
+        <div class="stat-card" id="profitCard">
+          <span class="stat-label">This Month P/L</span>
+          <span class="stat-value" id="statProfit">0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🔔 Upcoming Farrowing Alerts</h2>
+        <div id="farrowingAlerts" class="alert-list">
+          <p class="empty-msg">No upcoming farrowing events.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📈 Quick Summary</h2>
+        <div id="quickSummary" class="summary-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ HERD TAB ============ -->
+    <section class="tab-panel" id="tab-herd">
+      <div class="card">
+        <h2 id="pigFormTitle">Add New Pig</h2>
+        <form id="pigForm">
+          <input type="hidden" id="pigId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pigTag">Ear Tag # *</label>
+              <input type="text" id="pigTag" required placeholder="e.g. 1024">
+            </div>
+            <div class="form-group">
+              <label for="pigCategory">Category *</label>
+              <select id="pigCategory" required>
+                <option value="Sow">Sow</option>
+                <option value="Boar">Boar</option>
+                <option value="Weaner">Weaner</option>
+                <option value="Finisher">Finisher</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pigBreed">Breed</label>
+              <input type="text" id="pigBreed" placeholder="e.g. Large White">
+            </div>
+            <div class="form-group">
+              <label for="pigPen">Pen Location</label>
+              <input type="text" id="pigPen" placeholder="e.g. Pen A2">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pigStatus">Status *</label>
+              <select id="pigStatus" required>
+                <option value="Active">Active</option>
+                <option value="Sold">Sold</option>
+                <option value="Culled">Culled</option>
+                <option value="Deceased">Deceased</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pigBirthDate">Birth Date</label>
+              <input type="date" id="pigBirthDate">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pigWeight">Weight (kg)</label>
+              <input type="number" id="pigWeight" step="0.1" min="0" placeholder="e.g. 85.5">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="pigSubmitBtn" class="primary">Save Pig</button>
+            <button type="button" id="pigCancelBtn" class="secondary hidden">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Herd List</h2>
+        <div class="filter-row">
+          <input type="text" id="herdSearch" placeholder="🔍 Search by tag, breed, pen...">
+          <select id="herdFilter">
+            <option value="">All Categories</option>
+            <option value="Sow">Sow</option>
+            <option value="Boar">Boar</option>
+            <option value="Weaner">Weaner</option>
+            <option value="Finisher">Finisher</option>
+          </select>
+        </div>
+        <div id="herdList" class="record-list">
+          <p class="empty-msg">No pigs recorded yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BREEDING TAB ============ -->
+    <section class="tab-panel" id="tab-breeding">
+      <div class="card">
+        <h2 id="breedFormTitle">Add Breeding Record</h2>
+        <form id="breedForm">
+          <input type="hidden" id="breedId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="breedSowTag">Sow Tag *</label>
+              <input type="text" id="breedSowTag" required placeholder="Sow ear tag">
+            </div>
+            <div class="form-group">
+              <label for="breedBoarTag">Boar Tag *</label>
+              <input type="text" id="breedBoarTag" required placeholder="Boar ear tag">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="breedServiceDate">Service Date *</label>
+              <input type="date" id="breedServiceDate" required>
+            </div>
+            <div class="form-group">
+              <label for="breedExpected">Expected Farrow (auto)</label>
+              <input type="date" id="breedExpected" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="breedActual">Actual Farrow Date</label>
+              <input type="date" id="breedActual">
+            </div>
+            <div class="form-group">
+              <label for="breedWeaningDate">Weaning Date</label>
+              <input type="date" id="breedWeaningDate">
+            </div>
+          </div>
+          <div class="form-row three">
+            <div class="form-group">
+              <label for="breedTotalBorn">Total Born</label>
+              <input type="number" id="breedTotalBorn" min="0">
+            </div>
+            <div class="form-group">
+              <label for="breedBornAlive">Born Alive</label>
+              <input type="number" id="breedBornAlive" min="0">
+            </div>
+            <div class="form-group">
+              <label for="breedStillBorn">Still Born</label>
+              <input type="number" id="breedStillBorn" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="breedWeaned">Piglets Weaned</label>
+              <input type="number" id="breedWeaned" min="0">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="breedSubmitBtn" class="primary">Save Record</button>
+            <button type="button" id="breedCancelBtn" class="secondary hidden">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Breeding Records</h2>
+        <div id="breedList" class="record-list">
+          <p class="empty-msg">No breeding records yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HEALTH TAB ============ -->
+    <section class="tab-panel" id="tab-health">
+      <div class="card">
+        <h2 id="healthFormTitle">Add Health Record</h2>
+        <form id="healthForm">
+          <input type="hidden" id="healthId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="healthPigTag">Pig Tag *</label>
+              <input type="text" id="healthPigTag" required placeholder="Pig ear tag">
+            </div>
+            <div class="form-group">
+              <label for="healthDate">Record Date *</label>
+              <input type="date" id="healthDate" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="healthType">Treatment Type *</label>
+              <select id="healthType" required>
+                <option value="Vaccination">Vaccination</option>
+                <option value="Deworming">Deworming</option>
+                <option value="Medication">Medication</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="healthDosage">Dosage</label>
+              <input type="text" id="healthDosage" placeholder="e.g. 2ml / 5mg">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="healthNotes">Notes</label>
+            <textarea id="healthNotes" rows="3" placeholder="Additional notes..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="healthSubmitBtn" class="primary">Save Record</button>
+            <button type="button" id="healthCancelBtn" class="secondary hidden">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Health Records</h2>
+        <div id="healthList" class="record-list">
+          <p class="empty-msg">No health records yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FINANCES TAB ============ -->
+    <section class="tab-panel" id="tab-finances">
+      <div class="card">
+        <h2 id="finFormTitle">Add Transaction</h2>
+        <form id="finForm">
+          <input type="hidden" id="finId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="finDate">Date *</label>
+              <input type="date" id="finDate" required>
+            </div>
+            <div class="form-group">
+              <label for="finType">Type *</label>
+              <select id="finType" required>
+                <option value="Income">Income</option>
+                <option value="Expense">Expense</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="finCategory">Category *</label>
+              <select id="finCategory" required>
+                <option value="Feed">Feed</option>
+                <option value="Vet">Vet</option>
+                <option value="Sales">Sales</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="finAmount">Amount *</label>
+              <input type="number" id="finAmount" step="0.01" min="0" required placeholder="0.00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="finDetails">Details</label>
+            <input type="text" id="finDetails" placeholder="Description...">
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="finSubmitBtn" class="primary">Save Transaction</button>
+            <button type="button" id="finCancelBtn" class="secondary hidden">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Transactions</h2>
+        <div id="finSummary" class="fin-summary"></div>
+        <div id="finList" class="record-list">
+          <p class="empty-msg">No transactions yet.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
